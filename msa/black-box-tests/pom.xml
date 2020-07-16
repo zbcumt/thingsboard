@@ -1,6 +1,6 @@
 <!--
 
-    Copyright © 2016-2019 The Thingsboard Authors
+    Copyright © 2016-2020 The Thingsboard Authors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 
     <parent>
         <groupId>org.thingsboard</groupId>
-        <version>2.4.2-SNAPSHOT</version>
+        <version>3.1.0-SNAPSHOT</version>
         <artifactId>msa</artifactId>
     </parent>
     <groupId>org.thingsboard.msa</groupId>
@@ -37,7 +37,6 @@
         <blackBoxTests.skip>true</blackBoxTests.skip>
         <testcontainers.version>1.9.1</testcontainers.version>
         <zeroturnaround.version>1.10</zeroturnaround.version>
-        <java-websocket.version>1.3.9</java-websocket.version>
         <httpclient.version>4.5.6</httpclient.version>
     </properties>
 
@@ -55,7 +54,6 @@
         <dependency>
             <groupId>org.java-websocket</groupId>
             <artifactId>Java-WebSocket</artifactId>
-            <version>${java-websocket.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -89,6 +87,10 @@
         <dependency>
             <groupId>org.thingsboard</groupId>
             <artifactId>tools</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.thingsboard</groupId>
+            <artifactId>rest-client</artifactId>
         </dependency>
     </dependencies>
 

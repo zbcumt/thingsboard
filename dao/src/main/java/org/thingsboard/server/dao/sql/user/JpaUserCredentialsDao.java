@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2019 The Thingsboard Authors
+ * Copyright © 2016-2020 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.thingsboard.server.dao.sql.user;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Component;
-import org.thingsboard.server.common.data.UUIDConverter;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.security.UserCredentials;
 import org.thingsboard.server.dao.DaoUtil;
@@ -45,13 +44,13 @@ public class JpaUserCredentialsDao extends JpaAbstractDao<UserCredentialsEntity,
     }
 
     @Override
-    protected CrudRepository<UserCredentialsEntity, String> getCrudRepository() {
+    protected CrudRepository<UserCredentialsEntity, UUID> getCrudRepository() {
         return userCredentialsRepository;
     }
 
     @Override
     public UserCredentials findByUserId(TenantId tenantId, UUID userId) {
-        return DaoUtil.getData(userCredentialsRepository.findByUserId(UUIDConverter.fromTimeUUID(userId)));
+        return DaoUtil.getData(userCredentialsRepository.findByUserId(userId));
     }
 
     @Override

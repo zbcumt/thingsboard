@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2019 The Thingsboard Authors
+ * Copyright © 2016-2020 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,15 @@ import org.thingsboard.server.dao.model.sql.WidgetTypeEntity;
 import org.thingsboard.server.dao.util.SqlDao;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Created by Valerii Sosliuk on 4/29/2017.
  */
 @SqlDao
-public interface WidgetTypeRepository extends CrudRepository<WidgetTypeEntity, String> {
+public interface WidgetTypeRepository extends CrudRepository<WidgetTypeEntity, UUID> {
 
-    List<WidgetTypeEntity> findByTenantIdAndBundleAlias(String tenantId, String bundleAlias);
+    List<WidgetTypeEntity> findByTenantIdAndBundleAlias(UUID tenantId, String bundleAlias);
 
-    WidgetTypeEntity findByTenantIdAndBundleAliasAndAlias(String tenantId, String bundleAlias, String alias);
+    WidgetTypeEntity findByTenantIdAndBundleAliasAndAlias(UUID tenantId, String bundleAlias, String alias);
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2019 The Thingsboard Authors
+ * Copyright © 2016-2020 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import org.thingsboard.server.dao.settings.AdminSettingsDao;
 import org.thingsboard.server.dao.sql.JpaAbstractDao;
 import org.thingsboard.server.dao.util.SqlDao;
 
+import java.util.UUID;
+
 @Component
 @Slf4j
 @SqlDao
@@ -41,7 +43,7 @@ public class JpaAdminSettingsDao extends JpaAbstractDao<AdminSettingsEntity, Adm
     }
 
     @Override
-    protected CrudRepository<AdminSettingsEntity, String> getCrudRepository() {
+    protected CrudRepository<AdminSettingsEntity, UUID> getCrudRepository() {
         return adminSettingsRepository;
     }
 

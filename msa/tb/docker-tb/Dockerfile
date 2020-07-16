@@ -1,5 +1,5 @@
 #
-# Copyright © 2016-2019 The Thingsboard Authors
+# Copyright © 2016-2020 The Thingsboard Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,13 +36,19 @@ ENV DATA_FOLDER=/data
 
 ENV HTTP_BIND_PORT=9090
 ENV DATABASE_TS_TYPE=sql
-ENV DATABASE_ENTITIES_TYPE=sql
 
 ENV SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.HSQLDialect
 ENV SPRING_DRIVER_CLASS_NAME=org.hsqldb.jdbc.JDBCDriver
 ENV SPRING_DATASOURCE_URL=jdbc:hsqldb:file:/data/db/thingsboardDb;sql.enforce_size=false;hsqldb.log_size=5
 ENV SPRING_DATASOURCE_USERNAME=sa
 ENV SPRING_DATASOURCE_PASSWORD=
+
+RUN mkdir -p /data
+RUN chown -R ${pkg.user}:${pkg.user} /data
+
+RUN chmod 555 ${pkg.installFolder}/bin/${pkg.name}.jar
+
+USER ${pkg.user}
 
 EXPOSE 9090
 EXPOSE 1883

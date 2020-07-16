@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2019 The Thingsboard Authors
+ * Copyright © 2016-2020 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.async.DeferredResult;
+import org.thingsboard.common.util.ThingsBoardThreadFactory;
 import org.thingsboard.server.common.data.Customer;
 import org.thingsboard.server.common.data.Device;
 import org.thingsboard.server.common.data.EntityView;
 import org.thingsboard.server.common.data.Tenant;
+import org.thingsboard.server.common.data.User;
 import org.thingsboard.server.common.data.asset.Asset;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
 import org.thingsboard.server.common.data.id.AssetId;
@@ -39,6 +41,7 @@ import org.thingsboard.server.common.data.id.EntityViewId;
 import org.thingsboard.server.common.data.id.RuleChainId;
 import org.thingsboard.server.common.data.id.RuleNodeId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.id.UserId;
 import org.thingsboard.server.common.data.rule.RuleChain;
 import org.thingsboard.server.common.data.rule.RuleNode;
 import org.thingsboard.server.controller.HttpValidationCallback;
@@ -105,7 +108,7 @@ public class AccessValidator {
 
     @PostConstruct
     public void initExecutor() {
-        executor = Executors.newSingleThreadExecutor();
+        executor = Executors.newSingleThreadExecutor(ThingsBoardThreadFactory.forName("access-validator"));
     }
 
     @PreDestroy
@@ -170,6 +173,9 @@ public class AccessValidator {
                 return;
             case TENANT:
                 validateTenant(currentUser, operation, entityId, callback);
+                return;
+            case USER:
+                validateUser(currentUser, operation, entityId, callback);
                 return;
             case ENTITY_VIEW:
                 validateEntityView(currentUser, operation, entityId, callback);
@@ -305,6 +311,22 @@ public class AccessValidator {
 
             }), executor);
         }
+    }
+
+    private void validateUser(final SecurityUser currentUser, Operation operation, EntityId entityId, FutureCallback<ValidationResult> callback) {
+        ListenableFuture<User> userFuture = userService.findUserByIdAsync(currentUser.getTenantId(), new UserId(entityId.getId()));
+        Futures.addCallback(userFuture, getCallback(callback, user -> {
+            if (user == null) {
+                return ValidationResult.entityNotFound("User with requested id wasn't found!");
+            }
+            try {
+                accessControlService.checkPermission(currentUser, Resource.USER, operation, entityId, user);
+            } catch (ThingsboardException e) {
+                return ValidationResult.accessDenied(e.getMessage());
+            }
+            return ValidationResult.ok(user);
+
+        }), executor);
     }
 
     private void validateEntityView(final SecurityUser currentUser, Operation operation, EntityId entityId, FutureCallback<ValidationResult> callback) {

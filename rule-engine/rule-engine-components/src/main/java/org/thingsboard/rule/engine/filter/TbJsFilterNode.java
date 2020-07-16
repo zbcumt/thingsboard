@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2019 The Thingsboard Authors
+ * Copyright © 2016-2020 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,10 +51,16 @@ public class TbJsFilterNode implements TbNode {
 
     @Override
     public void onMsg(TbContext ctx, TbMsg msg) {
-        ListeningExecutor jsExecutor = ctx.getJsExecutor();
-        withCallback(jsExecutor.executeAsync(() -> jsEngine.executeFilter(msg)),
-                filterResult -> ctx.tellNext(msg, filterResult ? "True" : "False"),
-                t -> ctx.tellFailure(msg, t));
+        ctx.logJsEvalRequest();
+        withCallback(jsEngine.executeFilterAsync(msg),
+                filterResult -> {
+                    ctx.logJsEvalResponse();
+                    ctx.tellNext(msg, filterResult ? "True" : "False");
+                },
+                t -> {
+                    ctx.tellFailure(msg, t);
+                    ctx.logJsEvalFailure();
+                }, ctx.getDbCallbackExecutor());
     }
 
     @Override

@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2019 The Thingsboard Authors
+ * Copyright © 2016-2020 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,35 @@
  */
 package org.thingsboard.server.dao.util;
 
-import com.datastax.driver.core.*;
+import com.datastax.oss.driver.api.core.ProtocolVersion;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.ColumnDefinition;
+import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.type.DataType;
+import com.datastax.oss.driver.api.core.type.codec.TypeCodec;
+import com.datastax.oss.driver.api.core.type.codec.registry.CodecRegistry;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import lombok.extern.slf4j.Slf4j;
+import org.thingsboard.common.util.ThingsBoardThreadFactory;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.msg.tools.TbRateLimits;
 import org.thingsboard.server.dao.nosql.CassandraStatementTask;
 
 import javax.annotation.Nullable;
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 
@@ -67,9 +83,9 @@ public abstract class AbstractBufferedRateExecutor<T extends AsyncTask, F extend
         this.concurrencyLimit = concurrencyLimit;
         this.printQueriesFreq = printQueriesFreq;
         this.queue = new LinkedBlockingDeque<>(queueLimit);
-        this.dispatcherExecutor = Executors.newFixedThreadPool(dispatcherThreads);
+        this.dispatcherExecutor = Executors.newFixedThreadPool(dispatcherThreads, ThingsBoardThreadFactory.forName("nosql-dispatcher"));
         this.callbackExecutor = Executors.newWorkStealingPool(callbackThreads);
-        this.timeoutExecutor = Executors.newSingleThreadScheduledExecutor();
+        this.timeoutExecutor = Executors.newSingleThreadScheduledExecutor(ThingsBoardThreadFactory.forName("nosql-timeout"));
         this.perTenantLimitsEnabled = perTenantLimitsEnabled;
         this.perTenantLimitsConfiguration = perTenantLimitsConfiguration;
         for (int i = 0; i < dispatcherThreads; i++) {
@@ -211,7 +227,7 @@ public abstract class AbstractBufferedRateExecutor<T extends AsyncTask, F extend
         CassandraStatementTask cassStmtTask = (CassandraStatementTask) taskCtx.getTask();
         if (cassStmtTask.getStatement() instanceof BoundStatement) {
             BoundStatement stmt = (BoundStatement) cassStmtTask.getStatement();
-            String query = stmt.preparedStatement().getQueryString();
+            String query = stmt.getPreparedStatement().getQuery();
             try {
                 query = toStringWithValues(stmt, ProtocolVersion.V5);
             } catch (Exception e) {
@@ -224,16 +240,16 @@ public abstract class AbstractBufferedRateExecutor<T extends AsyncTask, F extend
     }
 
     private static String toStringWithValues(BoundStatement boundStatement, ProtocolVersion protocolVersion) {
-        CodecRegistry codecRegistry = boundStatement.preparedStatement().getCodecRegistry();
-        PreparedStatement preparedStatement = boundStatement.preparedStatement();
-        String query = preparedStatement.getQueryString();
-        ColumnDefinitions defs = preparedStatement.getVariables();
+        CodecRegistry codecRegistry = boundStatement.codecRegistry();
+        PreparedStatement preparedStatement = boundStatement.getPreparedStatement();
+        String query = preparedStatement.getQuery();
+        ColumnDefinitions defs = preparedStatement.getVariableDefinitions();
         int index = 0;
-        for (ColumnDefinitions.Definition def : defs) {
+        for (ColumnDefinition def : defs) {
             DataType type = def.getType();
             TypeCodec<Object> codec = codecRegistry.codecFor(type);
             if (boundStatement.getBytesUnsafe(index) != null) {
-                Object value = codec.deserialize(boundStatement.getBytesUnsafe(index), protocolVersion);
+                Object value = codec.decode(boundStatement.getBytesUnsafe(index), protocolVersion);
                 String replacement = Matcher.quoteReplacement(codec.format(value));
                 query = query.replaceFirst("\\?", replacement);
             }

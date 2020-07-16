@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2019 The Thingsboard Authors
+ * Copyright © 2016-2020 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.thingsboard.server.dao.model.sql;
 
-import com.datastax.driver.core.utils.UUIDs;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -32,6 +31,7 @@ import org.thingsboard.server.dao.util.mapping.JsonStringType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
+import java.util.UUID;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -41,7 +41,7 @@ import javax.persistence.Table;
 public final class WidgetTypeEntity  extends BaseSqlEntity<WidgetType> implements BaseEntity<WidgetType> {
 
     @Column(name = ModelConstants.WIDGET_TYPE_TENANT_ID_PROPERTY)
-    private String tenantId;
+    private UUID tenantId;
 
     @Column(name = ModelConstants.WIDGET_TYPE_BUNDLE_ALIAS_PROPERTY)
     private String bundleAlias;
@@ -62,10 +62,11 @@ public final class WidgetTypeEntity  extends BaseSqlEntity<WidgetType> implement
 
     public WidgetTypeEntity(WidgetType widgetType) {
         if (widgetType.getId() != null) {
-            this.setId(widgetType.getId().getId());
+            this.setUuid(widgetType.getId().getId());
         }
+        this.setCreatedTime(widgetType.getCreatedTime());
         if (widgetType.getTenantId() != null) {
-            this.tenantId = toString(widgetType.getTenantId().getId());
+            this.tenantId = widgetType.getTenantId().getId();
         }
         this.bundleAlias = widgetType.getBundleAlias();
         this.alias = widgetType.getAlias();
@@ -75,10 +76,10 @@ public final class WidgetTypeEntity  extends BaseSqlEntity<WidgetType> implement
 
     @Override
     public WidgetType toData() {
-        WidgetType widgetType = new WidgetType(new WidgetTypeId(getId()));
-        widgetType.setCreatedTime(UUIDs.unixTimestamp(getId()));
+        WidgetType widgetType = new WidgetType(new WidgetTypeId(this.getUuid()));
+        widgetType.setCreatedTime(createdTime);
         if (tenantId != null) {
-            widgetType.setTenantId(new TenantId(toUUID(tenantId)));
+            widgetType.setTenantId(new TenantId(tenantId));
         }
         widgetType.setBundleAlias(bundleAlias);
         widgetType.setAlias(alias);

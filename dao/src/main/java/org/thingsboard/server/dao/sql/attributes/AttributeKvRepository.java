@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2019 The Thingsboard Authors
+ * Copyright © 2016-2020 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,18 @@
  */
 package org.thingsboard.server.dao.sql.attributes;
 
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 import org.thingsboard.server.common.data.EntityType;
 import org.thingsboard.server.dao.model.sql.AttributeKvCompositeKey;
 import org.thingsboard.server.dao.model.sql.AttributeKvEntity;
 import org.thingsboard.server.dao.util.SqlDao;
 
 import java.util.List;
+import java.util.UUID;
 
 @SqlDao
 public interface AttributeKvRepository extends CrudRepository<AttributeKvEntity, AttributeKvCompositeKey> {
@@ -32,7 +35,18 @@ public interface AttributeKvRepository extends CrudRepository<AttributeKvEntity,
             "AND a.id.entityId = :entityId " +
             "AND a.id.attributeType = :attributeType")
     List<AttributeKvEntity> findAllByEntityTypeAndEntityIdAndAttributeType(@Param("entityType") EntityType entityType,
-                                                                           @Param("entityId") String entityId,
+                                                                           @Param("entityId") UUID entityId,
                                                                            @Param("attributeType") String attributeType);
+
+    @Transactional
+    @Modifying
+    @Query("DELETE FROM AttributeKvEntity a WHERE a.id.entityType = :entityType " +
+            "AND a.id.entityId = :entityId " +
+            "AND a.id.attributeType = :attributeType " +
+            "AND a.id.attributeKey = :attributeKey")
+    void delete(@Param("entityType") EntityType entityType,
+                @Param("entityId") UUID entityId,
+                @Param("attributeType") String attributeType,
+                @Param("attributeKey") String attributeKey);
 }
 
